@@ -13,7 +13,7 @@ import com.saveFarm.server.dto.request.auth.SignUpRequestDto;
 import com.saveFarm.server.dto.request.auth.TelAuthCheckRequestDto;
 import com.saveFarm.server.dto.request.auth.TelAuthRequestDto;
 import com.saveFarm.server.dto.response.ResponseDto;
-import com.saveFarm.server.service.AuthService;
+import com.saveFarm.server.Service.AuthService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

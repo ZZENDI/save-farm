@@ -1,4 +1,4 @@
-package com.saveFarm.server.service.implement;
+package com.saveFarm.server.Service.implement;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -19,7 +19,7 @@ import com.saveFarm.server.provider.JwtProvider;
 import com.saveFarm.server.provider.SmsProvider;
 import com.saveFarm.server.repository.UserRepository;
 import com.saveFarm.server.repository.TelAuthNumberRepository;
-import com.saveFarm.server.service.AuthService;
+import com.saveFarm.server.Service.AuthService;
 
 import lombok.RequiredArgsConstructor;
 
