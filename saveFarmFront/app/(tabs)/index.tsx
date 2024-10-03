@@ -12,13 +12,14 @@ import {
   ImageSourcePropType,
   ImageBackground
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import * as Font from "expo-font";
 import { setCustomText } from 'react-native-global-props';
 import { Ionicons } from '@expo/vector-icons';
 import MapBasedDamageVisualization from './mapBasedDamageVisualization';
 import { LinearGradient } from 'expo-linear-gradient';
+import axios from 'axios';
+import { useLocation } from './useLocation';
 
 const Stack = createStackNavigator();
 
@@ -41,32 +42,162 @@ const Header = () => {
   );
 };
 
-const MainBanner = () => {
-  const colorScheme = useColorScheme();
-  return (
-    <View style={[styles.card, styles.mainBanner, colorScheme !==  'dark' ? styles.darkCard : styles.lightCard]}>
-      <Text style={[styles.mainTitle, colorScheme !==  'dark' ? styles.darkText : styles.lightText]}>미리 대비하는 농업, 재해 예측 시스템</Text>
-      <Text style={[styles.mainDescription, colorScheme !==  'dark' ? styles.darkTextFontSize : styles.lightTextFontSize]}>AI 기반 예측으로 한 발 앞서 농작물을 보호하세요!</Text>
-      <TouchableOpacity style={styles.ctaButton}>
-        <Text style={styles.ctaButtonText}>재해 예측 시작하기</Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
-
 const Basic = () => {
   const colorScheme = useColorScheme();
+  const [weatherData, setWeatherData] = useState<any>(null);
+  const [yestWeatherData, setYestWeatherData] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const { location, error: locationError } = useLocation();
+  const [address, setAddress] = useState<any>(null);
+  // 현재 날짜와 시간 설정
+  const now = new Date();
+  const nowFormattedDate = Number(
+    `${now.getFullYear().toString()}${(now.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`
+  );
+  const nowFormattedTime = `${now
+    .getHours()
+    .toString()
+    .padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+
+  // 오전 2시 10분 이후인지 체크
+  const isAfterMorning210 =
+    now.getHours() > 2 || (now.getHours() === 2 && now.getMinutes() >= 10);
+
+  // 어제 날짜 설정
+  const yesterday = new Date();
+  yesterday.setDate(now.getDate() - 1);
+  const yesterdayFormattedDate = Number(
+    `${yesterday.getFullYear().toString()}${(yesterday.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}${yesterday.getDate().toString().padStart(2, '0')}`
+  );
+
+  useEffect(() => {
+    const fetchWeatherData = async () => {
+      if (!location) return;
+
+      try {
+        // 오늘의 TMP 데이터를 가져옴
+        const todayResponse = await axios.post('http://localhost:8000/c1/main/temp', {
+          baseDate: nowFormattedDate,
+          baseTime: nowFormattedTime,
+          latitude: location.latitude,
+          longitude: location.longitude,
+        });
+        setWeatherData(todayResponse.data);
+        setAddress(todayResponse.data.address);
+        // TMX, TMN 값을 추출하기 위한 로직
+        if (!isAfterMorning210) {
+          // 오전 2시 10분 이전이라면 어제의 TMX, TMN 데이터를 가져옴
+          const yestResponse = await axios.post('http://localhost:8000/c1/main/temp', {
+            baseDate: yesterdayFormattedDate,
+            baseTime: '2300', // 어제 23시에 발표된 데이터
+            latitude: location.latitude,
+            longitude: location.longitude,
+          });
+          setYestWeatherData(yestResponse.data);
+        } else {
+          // 오전 2시 10분 이후라면 오늘의 TMX, TMN 데이터를 가져옴
+          const tmxTmnResponse = await axios.post('http://localhost:8000/c1/main/temp', {
+            baseDate: nowFormattedDate,
+            baseTime: '0210', // 오늘 오전 2시 10분에 발표된 데이터
+            latitude: location.latitude,
+            longitude: location.longitude,
+          });
+          setWeatherData((prev: any) => ({
+            ...prev,
+            tmxTmn: tmxTmnResponse.data,
+          }));
+        }
+
+        setLoading(false);
+      } catch (err) {
+        setError('날씨 데이터를 가져오는 데 실패했습니다.');
+        setLoading(false);
+      }
+    };
+
+    fetchWeatherData();
+  }, [location, nowFormattedDate, nowFormattedTime, yesterdayFormattedDate, isAfterMorning210]);
+
+  const renderWeatherInfo = () => {
+    if (loading) {
+      return (
+        <Text style={[styles.mainTitle, colorScheme !== 'dark' ? styles.darkTextMax : styles.lightTextMax]}>
+          로딩 중...
+        </Text>
+      );
+    }
+
+    if (error || locationError) {
+      return (
+        <Text style={[styles.mainTitle, colorScheme !== 'dark' ? styles.darkTextMax : styles.lightTextMax]}>
+          오류 발생
+        </Text>
+      );
+    }
+
+    if (weatherData) {
+      console.log();
+      // TMP, TMX, TMN 값 필터링
+      const dayNowTemp = weatherData.data.response.body.items.item
+        .filter((item: { category: string }) => item.category === 'TMP')
+        .sort((a: { fcstTime: string | number }, b: { fcstTime: string | number }) =>
+          a.fcstTime.toString().localeCompare(b.fcstTime.toString())
+        )
+        .pop();
+
+      const dayLowTemp = (isAfterMorning210 ? weatherData : yestWeatherData)?.data.response.body.items.item
+        .filter((item: { category: string }) => item.category === 'TMN')
+        .sort((a: { fcstTime: string | number }, b: { fcstTime: string | number }) =>
+          a.fcstTime.toString().localeCompare(b.fcstTime.toString())
+        )
+        .pop();
+
+      const dayHighTemp = (isAfterMorning210 ? weatherData : yestWeatherData)?.data.response.body.items.item
+        .filter((item: { category: string }) => item.category === 'TMX')
+        .sort((a: { fcstTime: string | number }, b: { fcstTime: string | number }) =>
+          a.fcstTime.toString().localeCompare(b.fcstTime.toString())
+        )
+        .pop();
+
+      return (
+        <>
+          <Text style={[styles.mainTitle, colorScheme !== 'dark' ? styles.darkTextMax : styles.lightTextMax]}>
+            {dayNowTemp ? `${dayNowTemp.fcstValue}°` : 'N/A'}
+          </Text>
+          <Text style={[styles.mainDescription, colorScheme !== 'dark' ? styles.darkTextFontSize : styles.lightTextFontSize]}>
+            최고 {dayHighTemp ? `${dayHighTemp.fcstValue}°` : 'N/A'} 최저 {dayLowTemp ? `${dayLowTemp.fcstValue}°` : 'N/A'}
+          </Text>
+        </>
+      );
+    }
+
+    return null;
+  };
+
   return (
-    <ImageBackground source={{ uri: 'https://search.pstatic.net/sunny/?src=https%3A%2F%2Fi.pinimg.com%2F736x%2F0e%2F79%2Fbc%2F0e79bc6746fa502f16a0482014b2b817.jpg&type=ofullfill340_600_png' }} imageStyle={styles.imageStyle} style={[styles.mainCard, styles.mainBanner, colorScheme !==  'dark' ? styles.darkCard : styles.lightCard]}>
-      <Text style={[styles.weatherMainDescription, colorScheme !==  'dark' ? styles.darkTextFontSize : styles.lightTextFontSize]}>지금 부산광역시 강서구는</Text>
-      <Text style={[styles.mainTitle, colorScheme !==  'dark' ? styles.darkTextMax : styles.lightTextMax]}>27 °</Text>
-      <Text style={[styles.mainDescription, colorScheme !==  'dark' ? styles.darkTextFontSize : styles.lightTextFontSize]}>최고 32° 최저 24°<br/>농작물에 피해를 줄 재해 예측은 없어요!</Text>
+    <ImageBackground
+      source={{
+        uri: 'https://search.pstatic.net/sunny/?src=https%3A%2F%2Fi.pinimg.com%2F736x%2F0e%2F79%2Fbc%2F0e79bc6746fa502f16a0482014b2b817.jpg&type=ofullfill340_600_png',
+      }}
+      imageStyle={styles.imageStyle}
+      style={[styles.mainCard, styles.mainBanner, colorScheme !== 'dark' ? styles.darkCard : styles.lightCard]}
+    >
+      <Text style={[styles.weatherMainDescription, colorScheme !== 'dark' ? styles.darkTextFontSize : styles.lightTextFontSize]}>
+        {location ? `${address}` : '위치 정보를 가져오는 중...'}
+      </Text>
+      {renderWeatherInfo()}
       <TouchableOpacity style={styles.readMoreButton}>
-        <Text style={styles.readMoreButtonText}>자세히 보기<br/>지역 변경하기</Text>
+        <Text style={styles.readMoreButtonText}>자세히 보기{'\n'}지역 변경하기</Text>
       </TouchableOpacity>
     </ImageBackground>
   );
 };
+
 
 const ServiceIntroduction = () => {
   const colorScheme = useColorScheme();
@@ -223,6 +354,7 @@ const App = () => {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    
     const loadFonts = async () => {
       await Font.loadAsync({
         "fonts1": require("../../assets/fonts/fonts1.ttf"),
@@ -243,6 +375,7 @@ const App = () => {
 
     loadFonts();
   }, []);
+  
 
   if (!isReady) {
     return null;
