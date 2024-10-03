@@ -21,7 +21,7 @@ import com.saveFarm.server.dto.response.ResponseCode;
 import com.saveFarm.server.dto.response.ResponseMessage;
 import com.saveFarm.server.filter.JwtAuthenticationFilter;
 import com.saveFarm.server.handler.OAuth2SuccessHandler;
-import com.saveFarm.server.service.implement.OAuth2UserServiceImplement;
+import com.saveFarm.server.Service.implement.OAuth2UserServiceImplement;
 
 import java.io.IOException;
 import jakarta.servlet.ServletException;
@@ -50,7 +50,7 @@ public class WebSecurityConfig {
             .csrf(CsrfConfigurer::disable)
             .cors(cors -> cors.configurationSource(configurationSource()))
             .authorizeHttpRequests(request -> request
-                .requestMatchers("/api/v1/auth/**", "/oauth2/callback/*", "/").permitAll()
+                .requestMatchers("/api/v1/auth/**", "/oauth2/callback/*","c1/main/**", "/").permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exception -> exception

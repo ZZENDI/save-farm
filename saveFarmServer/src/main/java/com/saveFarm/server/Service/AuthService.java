@@ -1,4 +1,4 @@
-package com.saveFarm.server.service;
+package com.saveFarm.server.Service;
 
 import org.springframework.http.ResponseEntity;
 
