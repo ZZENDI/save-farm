@@ -13,8 +13,8 @@ import {
   ImageBackground,
   Button
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { NavigationContainer, ParamListBase } from '@react-navigation/native';
+import { createStackNavigator, StackScreenProps } from '@react-navigation/stack';
 import * as Font from "expo-font";
 import { setCustomText } from 'react-native-global-props';
 import { Ionicons } from '@expo/vector-icons';
@@ -158,7 +158,7 @@ function SnsSuccess() {
 
 const Header = () => {
 
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const colorScheme = useColorScheme();
   return (
     <LinearGradient style={styles.gradient} colors={['#5f0d80', '#7c22a1', '#c487de']}>
@@ -327,7 +327,7 @@ const Footer = () => {
 
 const HomeScreen = () => {
   
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const colorScheme = useColorScheme();
   return (
     <ScrollView style={[styles.container, colorScheme !==  'dark' ? styles.darkBg : styles.lightBg]}>
@@ -345,12 +345,12 @@ const HomeScreen = () => {
 };
 
 // 로그인 페이지
-const SignInPage = ({ onPathChange }: { onPathChange: (path: AuthPath) => void }) => {
+const SignInPage = ({ onPathChange }: AuthComponentProps) => {
   const [cookies, setCookie] = useCookies();
   const [id, setId] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [message, setMessage] = useState<string>('');
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
 
   
   const onGoToSignUp = () => {
@@ -452,7 +452,7 @@ const SignUpPage: React.FC<{ onPathChange: (path: AuthPath) => void }> = ({ onPa
     const [isCheckedPassword, setCheckedPassword] = useState<boolean>(false);
     const [isSend, setSend] = useState<boolean>(false);
     const [isCheckedAuthNumber, setCheckedAuthNumber] = useState<boolean>(false);
-    const navigation = useNavigation();
+    const navigation = useNavigation<any>();
 
     // variable: SNS 회원가입 여부 //
     const isSnsSignUp = snsId !== null && joinPath !== null;
@@ -688,7 +688,7 @@ const App = () => {
   const [cookies, setCookie, removeCookie] = useCookies();    // 잘못된 토큰은 저장해둘 수 없고, 삭제해야 되니 remove도 불러옴
 
   //function: 네비게이터 함수 //
-  // const navigator = useNavigate();
+  const navigator = useNavigation<any>();
 
   // function: get sign in Response 처리 함수 //
   const getSignInResponse = (responseBody: GetSignInResponseDto | ResponseDto | null) => {
@@ -705,7 +705,7 @@ const App = () => {
       alert(message);
       removeCookie(ACCESS_TOKEN, {path: ROOT_PATH});
       setSignInUser(null);
-      // navigator(AUTH_ABSOLUTE_PATH);
+      navigator(AUTH_ABSOLUTE_PATH);
       return;
     }
 
@@ -752,8 +752,12 @@ const App = () => {
     <NativeRouter>
       <Stack.Navigator initialRouteName='Home'>
         <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="SignIn" component={SignInPage} options={{ headerShown: false }} />
-        <Stack.Screen name="SignUp" component={SignUpPage} options={{ headerShown: false }} />
+        <Stack.Screen name="SignIn" component={(props: StackScreenProps<ParamListBase, 'SignIn'>) => <SignInPage onPathChange={function (path: AuthPath): void {
+          throw new Error('에러 처리 미완료');
+        } } {...props} />} options={{ headerShown: false }} />
+        <Stack.Screen name="SignUp" component={(props: StackScreenProps<ParamListBase, 'SignUp'>) => <SignUpPage onPathChange={function (path: AuthPath): void {
+          throw new Error('에러 처리 미완료');
+        } } {...props} />} options={{ headerShown: false }} />
         <Stack.Screen name="Map" component={MapBasedDamageVisualization}/>
         <Stack.Screen name="index" component={Index} options={{ headerShown: false }} />
         <Stack.Screen name="snsSuccess" component={SnsSuccess} options={{ headerShown: false }} />
