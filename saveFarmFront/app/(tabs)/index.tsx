@@ -112,7 +112,6 @@ const Basic = () => {
             tmxTmn: tmxTmnResponse.data,
           }));
         }
-
         setLoading(false);
       } catch (err) {
         setError('날씨 데이터를 가져오는 데 실패했습니다.');
@@ -141,6 +140,8 @@ const Basic = () => {
     }
 
     if (weatherData) {
+      
+      console.log(weatherData);
       console.log();
       // TMP, TMX, TMN 값 필터링
       const dayNowTemp = weatherData.data.response.body.items.item
