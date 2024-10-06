@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "@expo/config": "^9.0.4",
-    "@expo/config-plugins": "^8.0.10"
-  }
-}
