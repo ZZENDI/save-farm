@@ -5,7 +5,7 @@ import asyncio
 import nest_asyncio
 
 # Google Geocoding API 키 입력
-api_key = 'AIzaSyBtIeeOMdSpsh1f2k2g5L1ySWYBfFQBJlo'  # API 키 입력
+api_key = ''  # API 키 입력
 
 # Geocoding API 호출 함수
 cache = {}
